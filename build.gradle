@@ -26,10 +26,12 @@ dependencies {
     
     // lombok dependency
     compileOnly 'org.projectlombok:lombok:1.18.12'
-	annotationProcessor 'org.projectlombok:lombok:1.18.12'
-	
-	// TODO: add AWS SQS dependency
-	compile group: 'com.amazonaws', name: 'aws-java-sdk-sqs', version: '1.11.774'
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+
+    // google guava
+    compile group: 'com.google.guava', name: 'guava', version: '19.0'
+
+    // TODO: add AWS SQS dependency
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'

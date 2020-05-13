@@ -6,7 +6,8 @@ package com.learn.minimcdonalds;
 public class App {
 
     public static void main(String[] args) {
-
+        
     }
-
+    
+    // TODO: setup Amazon SQS client
 }
