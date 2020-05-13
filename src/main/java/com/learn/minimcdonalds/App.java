@@ -3,11 +3,25 @@
  */
 package com.learn.minimcdonalds;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+
 public class App {
 
     public static void main(String[] args) {
         
+        final AmazonSQS sqs = getSQSClient();
+
     }
     
-    // TODO: setup Amazon SQS client
+    private static AmazonSQS getSQSClient() {
+
+        return AmazonSQSClientBuilder
+                .standard()
+                .withRegion(Regions.US_WEST_2)
+                .build();
+    }
+    
+    // TODO: queue operation
 }
