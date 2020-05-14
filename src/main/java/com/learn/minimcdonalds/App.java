@@ -3,13 +3,27 @@
  */
 package com.learn.minimcdonalds;
 
-import javax.jms.JMSException;
+import java.util.UUID;
 
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
+import javax.jms.MessageProducer;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
+import com.google.common.collect.ImmutableMap;
+
+import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
 import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.sqs.model.CreateQueueResult;
 
 public class App {
 
@@ -30,5 +44,126 @@ public class App {
         return connectionFactory.createConnection();        
     }
 
-    // TODO: add queue operation
+    private static void createStandardQueue(SQSConnection connection) throws JMSException {
+        
+        // Get the wrapped client
+        AmazonSQSMessagingClientWrapper client = connection.getWrappedAmazonSQSClient();
+        String queueName = "MyQueue";
+
+        // Create an SQS queue named MyQueue, if it doesn't already exist
+        if (!client.queueExists(queueName)) {
+            CreateQueueResult createQueueResult = client.createQueue(queueName);
+            System.out.println("Create a queue with URL: " + createQueueResult.getQueueUrl());
+        }
+    }
+    
+    private static void createFIFOQueue(SQSConnection connection) throws JMSException {
+        
+        // Get the wrapped client
+        AmazonSQSMessagingClientWrapper client = connection.getWrappedAmazonSQSClient();
+        String queueName = "MyQueue.fifo";
+
+        // Create an SQS queue named MyQueue, if it doesn't already exist
+        if (!client.queueExists(queueName)) {
+            
+            CreateQueueRequest createQueueRequest = new CreateQueueRequest()
+                    .withQueueName(queueName)
+                    .withAttributes(ImmutableMap.of(
+                            "FifoQueue", "true",
+                            "ContentBasedDeduplication", "true"
+                    ));
+            CreateQueueResult createQueueResult = client.createQueue(createQueueRequest);
+            
+            System.out.println("Create a queue with URL: " + createQueueResult.getQueueUrl());
+        }
+    }
+
+    private static void sendMessageStandardQueue(SQSConnection connection, String msg) throws JMSException {
+        
+        // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        // Create a queue identity and specify the queue name to the session
+        Queue queue = session.createQueue("MyQueue");
+
+        // Create a producer for the 'MyQueue'
+        MessageProducer producer = session.createProducer(queue);
+
+        // Create the text message
+        TextMessage message = session.createTextMessage(msg);
+
+        // Send the message
+        producer.send(message);
+    }
+    
+    private static void sendMessageFIFOQueue(SQSConnection connection, String msg) throws JMSException {
+        
+        // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        // Create a queue identity and specify the queue name to the session
+        Queue queue = session.createQueue("MyQueue.fifo");
+
+        // Create a producer for the 'MyQueue'
+        MessageProducer producer = session.createProducer(queue);
+
+        // Create the text message
+        TextMessage message = session.createTextMessage(msg);
+        message.setStringProperty("JMSXGroupID", "group-1");
+        message.setStringProperty("JMS_SQS_DeduplicationId", UUID.randomUUID().toString());
+
+        // Send the message
+        producer.send(message);
+    }
+
+    private static void receiveMessage(SQSConnection connection) throws Exception {
+
+        // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        // Create a queue identity and specify the queue name to the session
+        Queue queue = session.createQueue("MyQueue.fifo");
+
+        // Create a consumer for the 'MyQueue'
+        MessageConsumer consumer = session.createConsumer(queue);
+        connection.start();
+
+        // Receive a message from 'MyQueue' and wait up to 1 second
+        Message receivedMessage = consumer.receive(1000);
+
+        // Cast the received message as TextMessage and display the text
+        if (receivedMessage != null) {
+            System.out.println("Received: " + ((TextMessage) receivedMessage).getText());
+        }
+
+    }
+
+    private static void receiveMessageAsync(SQSConnection connection) throws JMSException {
+        // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        // Create a queue identity and specify the queue name to the session
+        Queue queue = session.createQueue("MyQueue");
+
+        // Create a consumer for the 'MyQueue'.
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        // Instantiate and set the message listener for the consumer.
+        consumer.setMessageListener(new MessageListener() {
+            
+            @Override
+            public void onMessage(Message message) {
+                try {
+                    // Cast the received message as TextMessage and print the text to screen.
+                    System.out.println("Received: " + ((TextMessage) message).getText());
+                } catch (JMSException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        // Start receiving incoming messages.
+        connection.start();
+    }
+  
 }
