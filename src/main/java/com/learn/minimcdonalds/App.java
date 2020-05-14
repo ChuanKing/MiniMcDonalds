@@ -3,12 +3,32 @@
  */
 package com.learn.minimcdonalds;
 
+import javax.jms.JMSException;
+
+import com.amazon.sqs.javamessaging.ProviderConfiguration;
+import com.amazon.sqs.javamessaging.SQSConnection;
+import com.amazon.sqs.javamessaging.SQSConnectionFactory;
+
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+
 public class App {
 
     public static void main(String[] args) throws Exception {
 
+        SQSConnection connection = createSQSConnection();
     }
 
-    // TODO: create SQS connection
-    
+    private static SQSConnection createSQSConnection() throws JMSException {
+        
+        // Create a new connection factory with all defaults (credentials and region) set automatically
+        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
+                new ProviderConfiguration(),
+                AmazonSQSClientBuilder.defaultClient()
+        );
+
+        // Create the connection.
+        return connectionFactory.createConnection();        
+    }
+
+    // TODO: add queue operation
 }

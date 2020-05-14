@@ -35,6 +35,7 @@ dependencies {
 	compile group: 'com.amazonaws', name: 'aws-java-sdk-sqs', version: '1.11.774'
 	
 	// TODO: AWS SQS JMS dependency
+	compile group: 'com.amazonaws', name: 'amazon-sqs-java-messaging-lib', version: '1.0.8'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
